@@ -7,20 +7,23 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.apache.commons.net.whois.WhoisClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
 @RestController
-@RequestMapping("/api/domain")
+@RequestMapping("/api/v1/domain")
 @Tag(name = "Consulta de Domínios", description = "Endpoints para obter informações de domínios")
 public class DomainController {
+
+    private final DomainService domainService;
+
+    @Autowired
+    public DomainController(DomainService domainService) {
+        this.domainService = domainService;
+    }
 
     @Operation(
         summary = "Obtém informações sobre um domínio",
@@ -44,32 +47,6 @@ public class DomainController {
             example = "google.com"
         ) 
         @PathVariable String domainName) {
-        StringBuilder result = new StringBuilder();
-
-        // Check if domain is hosted
-        try {
-            InetAddress address = InetAddress.getByName(domainName);
-            result.append("Status: Publicado (Ativo)\n");
-            result.append("Endereço IP: ").append(address.getHostAddress()).append("\n\n");
-        } catch (UnknownHostException e) {
-            result.append("Status: Não Publicado (Inativo ou não registrado)\n\n");
-        }
-
-        // WHOIS lookup
-        WhoisClient whois = new WhoisClient();
-        try {
-            String whoisServer = WhoisClient.DEFAULT_HOST;
-            if (domainName.endsWith(".br")) {
-                whoisServer = "whois.registro.br";
-            }
-            whois.connect(whoisServer);
-            result.append("Informações do WHOIS:\n");
-            result.append(whois.query(domainName));
-            whois.disconnect();
-        } catch (IOException e) {
-            result.append("Não foi possível obter informações do WHOIS.");
-        }
-
-        return result.toString();
+        return domainService.getDomainInfo(domainName);
     }
 }
