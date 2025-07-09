@@ -49,7 +49,7 @@ A seguir estão os endpoints disponíveis na API:
 
 ### 1. Consulta de Domínios
 
-*   **Endpoint:** `GET /api/domain/{domainName}`
+*   **Endpoint:** `GET /api/v1/domain/{domainName}`
 *   **Descrição:** Verifica se um domínio possui um registro de IP ativo (está publicado) e retorna informações do WHOIS. Para domínios `.br`, a consulta é direcionada ao `whois.registro.br`.
 *   **Parâmetros:**
     *   `domainName` (String): O nome do domínio a ser consultado (ex: `google.com`).
@@ -62,9 +62,25 @@ A seguir estão os endpoints disponíveis na API:
     [...dados do WHOIS...]
     ```
 
-### 2. Geolocalização de IP
+### 2. DNS Lookup
 
-*   **Endpoint:** `GET /api/geolocalizacao/{ip}`
+*   **Endpoint:** `GET /api/v1/dnslookup/{host}`
+*   **Descrição:** Retorna informações detalhadas de DNS para um determinado host, incluindo registros A, AAAA, MX, NS, TXT e CNAME.
+*   **Parâmetros:**
+    *   `host` (String): O host (domínio ou IP) para o qual o DNS lookup será executado (ex: `google.com`).
+*   **Exemplo de Resposta:**
+    ```json
+    {
+      "A":["172.217.160.142"],
+      "MX":["10 alt1.aspmx.l.google.com.","20 alt2.aspmx.l.google.com."],
+      "NS":["ns1.google.com.","ns2.google.com."],
+      "TXT":["v=spf1 include:_spf.google.com ~all"]
+    }
+    ```
+
+### 3. Geolocalização de IP
+
+*   **Endpoint:** `GET /api/v1/geolocalizacao/{ip}`
 *   **Descrição:** Retorna dados de geolocalização para um determinado endereço IP, utilizando a API externa `ip-api.com`.
 *   **Parâmetros:**
     *   `ip` (String): O endereço IP a ser localizado (ex: `8.8.8.8`).
@@ -88,9 +104,39 @@ A seguir estão os endpoints disponíveis na API:
     }
     ```
 
-### 3. Diagnóstico de Rede (Traceroute)
+### 4. Ping
 
-*   **Endpoint:** `GET /api/traceroute/{host}`
+*   **Endpoint:** `GET /api/v1/ping/{host}`
+*   **Descrição:** Realiza um ping em um host (domínio ou IP) e retorna o resultado.
+*   **Parâmetros:**
+    *   `host` (String): O host para o qual o ping será executado (ex: `google.com`).
+*   **Exemplo de Resposta:**
+    ```text
+    Ping statistics for 142.250.218.142:
+        Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+    Approximate round trip times in milli-seconds:
+        Minimum = 10ms, Maximum = 12ms, Average = 11ms
+    ```
+
+### 5. Port Scan
+
+*   **Endpoint:** `GET /api/v1/portscan/{host}?ports={ports}&timeout={timeout}`
+*   **Descrição:** Verifica quais portas de uma lista especificada estão abertas em um determinado host.
+*   **Parâmetros:**
+    *   `host` (String): O host (domínio ou IP) para o qual o scan de portas será executado (ex: `google.com`).
+    *   `ports` (String): Lista de portas a serem verificadas, separadas por vírgula (ex: `80,443,22`).
+    *   `timeout` (Integer, Opcional): Tempo limite de conexão por porta em milissegundos (padrão: `1000`).
+*   **Exemplo de Resposta:**
+    ```json
+    [
+      80,
+      443
+    ]
+    ```
+
+### 6. Diagnóstico de Rede (Traceroute)
+
+*   **Endpoint:** `GET /api/v1/traceroute/{host}`
 *   **Descrição:** Executa o comando `traceroute` (`tracert` no Windows) do sistema operacional para um host (domínio ou IP) e retorna a saída.
 *   **Parâmetros:**
     *   `host` (String): O host para o qual o traceroute será executado (ex: `google.com`).
