@@ -69,16 +69,14 @@ class DnsLookupServiceTest {
                     .thenReturn(true)
                     .thenReturn(false); // Two attributes
 
-            when(mockAllAttrs.next())
-                    .thenReturn(mockAttributeA)
-                    .thenReturn(mockAttributeMX);
+            doReturn(mockAttributeA).doReturn(mockAttributeMX).when(mockAllAttrs).next();
 
             when(mockAttributeA.getID()).thenReturn("A");
             doReturn(mockAttrValuesA).when(mockAttributeA).getAll();
             when(mockAttrValuesA.hasMore())
                     .thenReturn(true)
                     .thenReturn(false);
-            when(mockAttrValuesA.next()).thenReturn("192.0.2.1");
+            doReturn((Object)"192.0.2.1").when(mockAttrValuesA).next();
 
             when(mockAttributeMX.getID()).thenReturn("MX");
             doReturn(mockAttrValuesMX).when(mockAttributeMX).getAll();
@@ -86,9 +84,7 @@ class DnsLookupServiceTest {
                     .thenReturn(true)
                     .thenReturn(true)
                     .thenReturn(false);
-            when(mockAttrValuesMX.next())
-                    .thenReturn("10 mail.example.com")
-                    .thenReturn("20 backup.example.com");
+            doReturn((Object)"10 mail.example.com").doReturn((Object)"20 backup.example.com").when(mockAttrValuesMX).next();
 
             Map<String, Object> result = dnsLookupService.dnsLookup("example.com").get();
 
