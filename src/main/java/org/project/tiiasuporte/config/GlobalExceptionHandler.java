@@ -2,6 +2,8 @@ package org.project.tiiasuporte.config;
 
 import org.project.tiiasuporte.exceptions.InvalidIpAddressException;
 import org.project.tiiasuporte.exceptions.ExternalServiceException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -16,8 +18,12 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(InvalidIpAddressException.class)
     public ResponseEntity<Object> handleInvalidIpAddressException(InvalidIpAddressException ex, WebRequest request) {
+        logger.warn("InvalidIpAddressException: {} | Request: {}", ex.getMessage(), request.getDescription(false));
+
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("message", ex.getMessage());
@@ -28,6 +34,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ExternalServiceException.class)
     public ResponseEntity<Object> handleExternalServiceException(ExternalServiceException ex, WebRequest request) {
+        logger.error("ExternalServiceException: {} | Request: {}", ex.getMessage(), request.getDescription(false), ex);
+
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("message", ex.getMessage());
@@ -38,6 +46,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleAllUncaughtException(Exception ex, WebRequest request) {
+        logger.error("Erro inesperado: {} | Request: {} | Exception: {}",
+            ex.getMessage(),
+            request.getDescription(false),
+            ex.getClass().getName(),
+            ex);
+
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("message", "Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.");
