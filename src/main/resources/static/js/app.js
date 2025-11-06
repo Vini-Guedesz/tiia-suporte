@@ -444,3 +444,137 @@ document.addEventListener('keydown', (e) => {
 console.log('%c🌐 TIIA Suporte', 'font-size: 20px; font-weight: bold; color: #3b82f6;');
 console.log('%cFerramentas de Diagnóstico de Rede', 'font-size: 14px; color: #6b7280;');
 console.log('%cAPI Docs: /swagger-ui.html', 'font-size: 12px; color: #10b981;');
+
+// ==========================================
+// Enhanced Features
+// ==========================================
+
+// Debounce utility
+const debounce = (func, wait) => {
+    let timeout;
+    return function executedFunction(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+};
+
+// Copy to Clipboard
+function copyToClipboard() {
+    const text = document.getElementById('resultsText').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        showSuccess('Resultado copiado para área de transferência!');
+    }).catch(err => {
+        showError('Erro ao copiar: ' + err.message);
+    });
+}
+
+// Export as JSON
+function exportAsJSON() {
+    const text = document.getElementById('resultsText').textContent;
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch {
+        data = { result: text };
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    downloadFile(blob, 'resultado.json');
+}
+
+// Export as Text
+function exportAsText() {
+    const text = document.getElementById('resultsText').textContent;
+    const blob = new Blob([text], { type: 'text/plain' });
+    downloadFile(blob, 'resultado.txt');
+}
+
+// Download file helper
+function downloadFile(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showSuccess(`Arquivo ${filename} baixado!`);
+}
+
+// History Management
+function saveToHistory(tool, query, result) {
+    const history = JSON.parse(localStorage.getItem('queryHistory') || '[]');
+    history.unshift({
+        tool,
+        query,
+        result: typeof result === 'string' ? result.substring(0, 200) : JSON.stringify(result).substring(0, 200),
+        timestamp: Date.now()
+    });
+    localStorage.setItem('queryHistory', JSON.stringify(history.slice(0, 50)));
+}
+
+function loadHistory() {
+    return JSON.parse(localStorage.getItem('queryHistory') || '[]');
+}
+
+// Favorites Management
+function addToFavorites(tool, query) {
+    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+    const exists = favorites.some(f => f.tool === tool && f.query === query);
+
+    if (!exists) {
+        favorites.push({ tool, query, timestamp: Date.now() });
+        localStorage.setItem('favorites', JSON.stringify(favorites));
+        showSuccess('Adicionado aos favoritos!');
+    } else {
+        showError('Já está nos favoritos!');
+    }
+}
+
+function loadFavorites() {
+    return JSON.parse(localStorage.getItem('favorites') || '[]');
+}
+
+// Offline/Online Detection
+window.addEventListener('offline', () => {
+    showError('Conexão perdida. Verifique sua internet.');
+    document.body.classList.add('offline');
+});
+
+window.addEventListener('online', () => {
+    showSuccess('Conexão restaurada!');
+    document.body.classList.remove('offline');
+});
+
+// Visual Validation Feedback
+function addValidationFeedback(inputId, validatorFunc) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    const debouncedValidation = debounce(() => {
+        const isValid = validatorFunc(input.value.trim());
+
+        if (input.value.trim() === '') {
+            input.classList.remove('border-red-500', 'border-green-500');
+            input.classList.add('border-gray-300', 'dark:border-gray-600');
+        } else if (isValid) {
+            input.classList.remove('border-red-500', 'border-gray-300');
+            input.classList.add('border-green-500');
+        } else {
+            input.classList.remove('border-green-500', 'border-gray-300');
+            input.classList.add('border-red-500');
+        }
+    }, 300);
+
+    input.addEventListener('input', debouncedValidation);
+}
+
+// Initialize validation feedback on page load
+document.addEventListener('DOMContentLoaded', () => {
+    addValidationFeedback('domainInput', validateHostname);
+    addValidationFeedback('dnsInput', validateHostname);
+    addValidationFeedback('geoInput', validateIP);
+    addValidationFeedback('pingInput', validateIPOrHostname);
+    addValidationFeedback('portHost', validateIPOrHostname);
+    addValidationFeedback('traceInput', validateIPOrHostname);
+});
