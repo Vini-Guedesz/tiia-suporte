@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.project.tiiasuporte.util.ValidationUtils;
 
+import javax.annotation.PreDestroy;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
@@ -37,6 +38,18 @@ public class DnsLookupService {
         this.dirContext = dirContext;
     }
 
+    @PreDestroy
+    public void cleanup() {
+        if (dirContext != null) {
+            try {
+                dirContext.close();
+                logger.info("DirContext fechado com sucesso");
+            } catch (NamingException e) {
+                logger.error("Erro ao fechar DirContext: {}", e.getMessage(), e);
+            }
+        }
+    }
+
     public CompletableFuture<Map<String, Object>> dnsLookup(String host) {
         return CompletableFuture.supplyAsync(() -> {
             Map<String, Object> result = new LinkedHashMap<>();
@@ -51,16 +64,23 @@ public class DnsLookupService {
                 Attributes attrs = dirContext.getAttributes(host, new String[]{"A", "AAAA", "MX", "NS", "TXT", "CNAME"});
 
                 NamingEnumeration<? extends Attribute> allAttrs = attrs.getAll();
-                while (allAttrs.hasMore()) {
-                    Attribute attr = allAttrs.next();
-                    List<String> values = new ArrayList<>();
-                    NamingEnumeration<?> attrValues = attr.getAll();
-                    while (attrValues.hasMore()) {
-                        values.add(attrValues.next().toString());
+                try {
+                    while (allAttrs.hasMore()) {
+                        Attribute attr = allAttrs.next();
+                        List<String> values = new ArrayList<>();
+                        NamingEnumeration<?> attrValues = attr.getAll();
+                        try {
+                            while (attrValues.hasMore()) {
+                                values.add(attrValues.next().toString());
+                            }
+                        } finally {
+                            attrValues.close();
+                        }
+                        result.put(attr.getID(), values);
                     }
-                    result.put(attr.getID(), values);
+                } finally {
+                    allAttrs.close();
                 }
-                // dirContext.close(); // DirContext should be closed by the caller or managed by Spring
                 logger.info("DNS Lookup para {} concluído: {}", host, result);
             } catch (NamingException e) {
                 logger.error("Erro ao realizar DNS lookup para {}: {}", host, e.getMessage(), e);

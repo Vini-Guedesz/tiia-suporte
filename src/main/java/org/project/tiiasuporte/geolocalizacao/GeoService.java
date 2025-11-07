@@ -1,5 +1,6 @@
 package org.project.tiiasuporte.geolocalizacao;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import org.project.tiiasuporte.exceptions.ExternalServiceException;
 import org.project.tiiasuporte.exceptions.InvalidIpAddressException;
@@ -29,6 +30,7 @@ public class GeoService {
     }
 
     @Cacheable(value = "geolocalizacao", key = "#ip")
+    @CircuitBreaker(name = "ipApi", fallbackMethod = "getGeoFallback")
     @RateLimiter(name = "ipApi")
     public String obterLocalizacao(String ip) {
         if (!ValidationUtils.isValidIpAddress(ip)) {
@@ -48,5 +50,17 @@ public class GeoService {
             logger.error("Erro inesperado ao obter geolocalização para IP {}: {}", ip, e.getMessage(), e);
             throw new ExternalServiceException(String.format("Erro inesperado ao obter geolocalização: %s", e.getMessage()), e);
         }
+    }
+
+    /**
+     * Fallback method for circuit breaker
+     * Returns cached data or error message when external API is unavailable
+     */
+    private String getGeoFallback(String ip, Exception ex) {
+        logger.warn("Circuit breaker activated for IP {}: {}", ip, ex.getMessage());
+        return String.format(
+            "{\"status\":\"fail\",\"message\":\"Serviço de geolocalização temporariamente indisponível\",\"query\":\"%s\"}",
+            ip
+        );
     }
 }

@@ -42,11 +42,16 @@ public class DomainService {
                 whoisServer = "whois.registro.br";
             }
             whoisClient.connect(whoisServer);
-            result.append("Informações do WHOIS:\n");
-            result.append(whoisClient.query(domainName));
-            whoisClient.disconnect();
+            try {
+                result.append("Informações do WHOIS:\n");
+                result.append(whoisClient.query(domainName));
+            } finally {
+                // Garante desconexão mesmo se ocorrer erro
+                whoisClient.disconnect();
+            }
         } catch (IOException e) {
-            result.append("Não foi possível obter informações do WHOIS.");
+            result.append("Não foi possível obter informações do WHOIS: ");
+            result.append(e.getMessage());
         }
 
         return result.toString();

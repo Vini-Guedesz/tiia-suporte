@@ -50,109 +50,177 @@ public class TracerouteService {
     // New method to return raw traceroute output
     @Async
     public CompletableFuture<String> rawTraceroute(String host, int maxHops, int timeout) {
-        return CompletableFuture.supplyAsync(() -> {
-            String command;
-            String os = System.getProperty("os.name").toLowerCase();
-            if (os.contains("win")) {
-                command = String.format("%s -h %d -w %d %s", tracerouteCommandWindows, maxHops, timeout, host);
-            } else {
-                command = String.format("%s -m %d -w %d %s", tracerouteCommandLinux, maxHops, timeout, host);
+        StringBuilder result = new StringBuilder();
+
+        String os = System.getProperty("os.name").toLowerCase();
+        ProcessBuilder processBuilder;
+
+        if (os.contains("win")) {
+            // Windows: tracert -h maxHops -w timeout(ms) host
+            processBuilder = new ProcessBuilder(
+                tracerouteCommandWindows,
+                "-h", String.valueOf(maxHops),
+                "-w", String.valueOf(timeout),
+                host
+            );
+        } else {
+            // Linux: traceroute -m maxHops -w timeout(seconds) host
+            int timeoutSeconds = Math.max(1, timeout / 1000);
+            processBuilder = new ProcessBuilder(
+                tracerouteCommandLinux,
+                "-m", String.valueOf(maxHops),
+                "-w", String.valueOf(timeoutSeconds),
+                host
+            );
+        }
+
+        try {
+            Process process = processBuilder.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                result.append(line).append("\n");
             }
 
-            StringBuilder result = new StringBuilder();
-            try {
-                Process process = Runtime.getRuntime().exec(command);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    result.append(line).append("\n");
-                }
-                process.waitFor();
-                logger.info("Traceroute raw output for {}:\n{}", host, result.toString());
-            } catch (IOException | InterruptedException e) {
-                logger.error("Erro ao executar o traceroute raw para {}: {}", host, e.getMessage(), e);
-                result.append("Erro ao executar o traceroute: ").append(e.getMessage());
+            // Captura erros se houver
+            StringBuilder errors = new StringBuilder();
+            while ((line = errorReader.readLine()) != null) {
+                errors.append(line).append("\n");
             }
-            return result.toString();
-        });
+
+            int exitCode = process.waitFor();
+            if (exitCode != 0 && errors.length() > 0) {
+                result.append("\nErros:\n").append(errors);
+            }
+
+            logger.info("Traceroute raw para {} concluído com código {}", host, exitCode);
+        } catch (IOException | InterruptedException e) {
+            logger.error("Erro ao executar o traceroute raw para {}: {}", host, e.getMessage(), e);
+            result.append("Erro ao executar o traceroute: ").append(e.getMessage());
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        return CompletableFuture.completedFuture(result.toString());
     }
 
     @Async
     public CompletableFuture<List<TracerouteHop>> traceroute(String host, int maxHops, int timeout) {
-        return CompletableFuture.supplyAsync(() -> {
-            if (!ValidationUtils.isValidIpOrHostname(host)) {
-                logger.warn("Tentativa de traceroute com host inválido: {}", host);
-                List<TracerouteHop> errorList = new ArrayList<>();
-                TracerouteHop errorHop = new TracerouteHop();
-                errorHop.setHostname("Host inválido.");
-                errorList.add(errorHop);
-                return errorList;
+        if (!ValidationUtils.isValidIpOrHostname(host)) {
+            logger.warn("Tentativa de traceroute com host inválido: {}", host);
+            List<TracerouteHop> errorList = new ArrayList<>();
+            TracerouteHop errorHop = new TracerouteHop();
+            errorHop.setHostname("Host inválido.");
+            errorList.add(errorHop);
+            return CompletableFuture.completedFuture(errorList);
+        }
+
+        List<TracerouteHop> hops = new ArrayList<>();
+        String os = System.getProperty("os.name").toLowerCase();
+        ProcessBuilder processBuilder;
+
+        if (os.contains("win")) {
+            // Windows: tracert -h maxHops -w timeout(ms) host
+            processBuilder = new ProcessBuilder(
+                tracerouteCommandWindows,
+                "-h", String.valueOf(maxHops),
+                "-w", String.valueOf(timeout),
+                host
+            );
+        } else {
+            // Linux: traceroute -m maxHops -w timeout(seconds) host
+            int timeoutSeconds = Math.max(1, timeout / 1000);
+            processBuilder = new ProcessBuilder(
+                tracerouteCommandLinux,
+                "-m", String.valueOf(maxHops),
+                "-w", String.valueOf(timeoutSeconds),
+                host
+            );
+        }
+
+        try {
+            Process process = processBuilder.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+            String line;
+            int hopNumber = 0;
+            Pattern linePattern = Pattern.compile("\\s*\\d+\\s+(?:\\S+\\s+){3}([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})|\\s*\\d+\\s+.*?\\(([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})\\)");
+
+            while ((line = reader.readLine()) != null) {
+                Matcher matcher = linePattern.matcher(line);
+                if (matcher.find()) {
+                    hopNumber++;
+                    String ipAddress = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
+                    String hostname = "Unknown";
+
+                    TracerouteHop hop = new TracerouteHop(hopNumber, ipAddress, hostname);
+                    hops.add(hop);
+                }
             }
 
-            List<TracerouteHop> hops = new ArrayList<>();
-            String command;
-
-            String os = System.getProperty("os.name").toLowerCase();
-            if (os.contains("win")) {
-                command = String.format("%s -h %d -w %d %s", tracerouteCommandWindows, maxHops, timeout, host);
-            } else {
-                command = String.format("%s -m %d -w %d %s", tracerouteCommandLinux, maxHops, timeout, host);
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                logger.warn("Traceroute para {} concluído com código não-zero: {}", host, exitCode);
             }
 
-            try {
-                Process process = Runtime.getRuntime().exec(command);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            // Paralelizar chamadas de geolocalização
+            if (!hops.isEmpty()) {
+                List<CompletableFuture<Void>> geoFutures = new ArrayList<>();
 
-                String line;
-                int hopNumber = 0;
-                Pattern linePattern = Pattern.compile("\\s*\\d+\\s+(?:\\S+\\s+){3}([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})|\\s*\\d+\\s+.*?\\(([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})\\)");
-
-                while ((line = reader.readLine()) != null) {
-                    Matcher matcher = linePattern.matcher(line);
-                    if (matcher.find()) {
-                        hopNumber++;
-                        String ipAddress = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
-                        String hostname = "Unknown";
-
-                        TracerouteHop hop = new TracerouteHop(hopNumber, ipAddress, hostname);
-
+                for (TracerouteHop hop : hops) {
+                    CompletableFuture<Void> geoFuture = CompletableFuture.runAsync(() -> {
                         try {
-                            String geoData = geoService.obterLocalizacao(ipAddress);
+                            String geoData = geoService.obterLocalizacao(hop.getIpAddress());
                             JsonNode root = objectMapper.readTree(geoData);
                             if (root.has("status") && root.get("status").asText().equals("success")) {
                                 hop.setCountry(root.has("country") ? root.get("country").asText() : null);
                                 hop.setCity(root.has("city") ? root.get("city").asText() : null);
                                 hop.setLat(root.has("lat") ? root.get("lat").asDouble() : 0.0);
                                 hop.setLon(root.has("lon") ? root.get("lon").asDouble() : 0.0);
-                                hop.setHostname(root.has("query") ? root.get("query").asText() : hostname);
-                                logger.debug("Geolocalização para IP {} no hop {}: {}", ipAddress, hopNumber, geoData);
+                                hop.setHostname(root.has("query") ? root.get("query").asText() : "Unknown");
+                                logger.debug("Geolocalização para IP {} no hop {}: sucesso", hop.getIpAddress(), hop.getHopNumber());
                             } else {
-                                hop.setHostname(root.has("message") ? root.get("message").asText() : hostname);
-                                logger.warn("Falha na geolocalização para IP {} no hop {}: {}", ipAddress, hopNumber, geoData);
+                                hop.setHostname(root.has("message") ? root.get("message").asText() : "Unknown");
+                                logger.warn("Falha na geolocalização para IP {} no hop {}", hop.getIpAddress(), hop.getHopNumber());
                             }
                         } catch (InvalidIpAddressException | ExternalServiceException e) {
-                            logger.error("Erro de serviço ao obter geolocalização para IP {} no hop {}: {}", ipAddress, hopNumber, e.getMessage(), e);
-                            hop.setHostname("Erro ao obter geolocalização: " + e.getMessage());
-                        } catch (IOException e) {
-                            logger.error("Erro ao processar dados de geolocalização para IP {} no hop {}: {}", ipAddress, hopNumber, e.getMessage(), e);
+                            logger.error("Erro de serviço ao obter geolocalização para IP {} no hop {}: {}",
+                                hop.getIpAddress(), hop.getHopNumber(), e.getMessage());
                             hop.setHostname("Erro ao obter geolocalização");
+                        } catch (IOException e) {
+                            logger.error("Erro ao processar dados de geolocalização para IP {} no hop {}: {}",
+                                hop.getIpAddress(), hop.getHopNumber(), e.getMessage());
+                            hop.setHostname("Erro ao processar geolocalização");
                         }
-                        hops.add(hop);
-                    }
+                    });
+                    geoFutures.add(geoFuture);
                 }
 
-                process.waitFor();
-                logger.info("Traceroute para {} concluído com {} saltos.", host, hops.size());
-            } catch (IOException | InterruptedException e) {
-                logger.error("Erro ao executar o traceroute para {}: {}", host, e.getMessage(), e);
-                List<TracerouteHop> errorList = new ArrayList<>();
-                TracerouteHop errorHop = new TracerouteHop();
-                errorHop.setHostname("Erro ao executar o traceroute: " + e.getMessage());
-                errorList.add(errorHop);
-                return errorList;
+                // Aguarda todas as geolocalizações completarem (com timeout de 30 segundos)
+                try {
+                    CompletableFuture.allOf(geoFutures.toArray(new CompletableFuture[0]))
+                        .get(30, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (Exception e) {
+                    logger.error("Timeout ou erro ao aguardar geolocalizações: {}", e.getMessage());
+                }
             }
 
-            return hops;
-        });
+            logger.info("Traceroute para {} concluído com {} saltos.", host, hops.size());
+        } catch (IOException | InterruptedException e) {
+            logger.error("Erro ao executar o traceroute para {}: {}", host, e.getMessage(), e);
+            List<TracerouteHop> errorList = new ArrayList<>();
+            TracerouteHop errorHop = new TracerouteHop();
+            errorHop.setHostname("Erro ao executar o traceroute: " + e.getMessage());
+            errorList.add(errorHop);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            return CompletableFuture.completedFuture(errorList);
+        }
+
+        return CompletableFuture.completedFuture(hops);
     }
 }
