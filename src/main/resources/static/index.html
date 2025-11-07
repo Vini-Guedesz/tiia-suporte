@@ -14,6 +14,16 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="TIIA Suporte">
 
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -57,6 +67,33 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        /* Skeleton Loading Animations */
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite;
+        }
+        .dark .skeleton {
+            background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+            background-size: 1000px 100%;
+        }
+        .skeleton-line {
+            height: 1rem;
+            border-radius: 0.25rem;
+            margin-bottom: 0.5rem;
+        }
+        .skeleton-text {
+            height: 0.75rem;
+            border-radius: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+        .skeleton-circle {
+            border-radius: 50%;
         }
     </style>
 </head>
@@ -280,6 +317,13 @@
             </div>
             <div id="resultsContent" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 overflow-x-auto">
                 <pre id="resultsText" class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap" role="log" aria-live="polite"></pre>
+            </div>
+            <!-- Map Container for Traceroute -->
+            <div id="mapContainer" class="hidden mt-4" role="region" aria-label="Mapa de traceroute">
+                <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Visualização Geográfica da Rota</h3>
+                    <div id="map" style="height: 500px; border-radius: 0.5rem; overflow: hidden;" class="shadow-lg"></div>
+                </div>
             </div>
         </div>
 

@@ -71,6 +71,32 @@ function showResults(data, title = 'Resultados') {
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+function showSkeletonLoading() {
+    const resultsSection = document.getElementById('resultsSection');
+    const resultsContent = document.getElementById('resultsContent');
+
+    resultsSection.classList.remove('hidden');
+    resultsContent.innerHTML = `
+        <div class="space-y-3">
+            <div class="skeleton skeleton-line w-full"></div>
+            <div class="skeleton skeleton-line w-5/6"></div>
+            <div class="skeleton skeleton-line w-4/6"></div>
+            <div class="skeleton skeleton-text w-full"></div>
+            <div class="skeleton skeleton-text w-3/4"></div>
+            <div class="skeleton skeleton-text w-5/6"></div>
+            <div class="skeleton skeleton-line w-full mt-4"></div>
+            <div class="skeleton skeleton-line w-4/5"></div>
+        </div>
+    `;
+
+    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function hideSkeletonLoading() {
+    const resultsContent = document.getElementById('resultsContent');
+    resultsContent.innerHTML = '<pre id="resultsText" class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap" role="log" aria-live="polite"></pre>';
+}
+
 function showError(message) {
     showNotification(message, 'error');
 }
@@ -113,7 +139,11 @@ function showNotification(message, type = 'info') {
 
 function closeResults() {
     const resultsSection = document.getElementById('resultsSection');
+    const mapContainer = document.getElementById('mapContainer');
     resultsSection.classList.add('hidden');
+    if (mapContainer) {
+        mapContainer.classList.add('hidden');
+    }
 }
 
 // ==========================================
@@ -395,23 +425,173 @@ async function traceroute() {
     const button = event.target;
     const originalText = showLoading(button);
 
+    // Show skeleton loading
+    showSkeletonLoading();
+
     try {
-        // Use the raw traceroute endpoint for simpler output
-        const response = await fetch(`${API_BASE_URL}/traceroute/${encodeURIComponent(host)}`);
+        // Use the geo traceroute endpoint for map visualization
+        const response = await fetch(`${API_BASE_URL}/traceroute/geo/${encodeURIComponent(host)}`);
 
         if (!response.ok) {
             throw new Error(`Erro: ${response.status} ${response.statusText}`);
         }
 
-        const data = await response.text();
-        showResults(data, `Traceroute: ${host}`);
+        const hops = await response.json();
+
+        // Format text output
+        let textOutput = `Traceroute para ${host}\\n`;
+        textOutput += `Total de saltos: ${hops.length}\\n`;
+        textOutput += `${'='.repeat(80)}\\n\\n`;
+
+        hops.forEach(hop => {
+            textOutput += `Salto ${hop.hopNumber}:\\n`;
+            textOutput += `  IP: ${hop.ipAddress || 'N/A'}\\n`;
+            textOutput += `  Hostname: ${hop.hostname || 'Unknown'}\\n`;
+            if (hop.city || hop.country) {
+                textOutput += `  Localização: ${hop.city || 'N/A'}, ${hop.country || 'N/A'}\\n`;
+            }
+            if (hop.lat && hop.lon) {
+                textOutput += `  Coordenadas: ${hop.lat.toFixed(4)}, ${hop.lon.toFixed(4)}\\n`;
+            }
+            textOutput += `\\n`;
+        });
+
+        hideSkeletonLoading();
+        showResults(textOutput, `Traceroute: ${host}`);
+
+        // Render map if we have geolocation data
+        const validHops = hops.filter(hop => hop.lat && hop.lon && hop.lat !== 0 && hop.lon !== 0);
+        if (validHops.length > 0) {
+            renderTracerouteMap(validHops);
+        }
+
         showSuccess('Traceroute executado com sucesso!');
     } catch (error) {
         console.error('Error:', error);
+        hideSkeletonLoading();
         showError(`Erro ao executar traceroute: ${error.message}`);
     } finally {
         hideLoading(button, originalText);
     }
+}
+
+// ==========================================
+// Traceroute Map Rendering
+// ==========================================
+
+let tracerouteMap = null; // Store map instance
+
+function renderTracerouteMap(hops) {
+    const mapContainer = document.getElementById('mapContainer');
+    const mapElement = document.getElementById('map');
+
+    // Show map container
+    mapContainer.classList.remove('hidden');
+
+    // Clear previous map if exists
+    if (tracerouteMap) {
+        tracerouteMap.remove();
+        tracerouteMap = null;
+    }
+
+    // Calculate center point (average of all coordinates)
+    const avgLat = hops.reduce((sum, hop) => sum + hop.lat, 0) / hops.length;
+    const avgLon = hops.reduce((sum, hop) => sum + hop.lon, 0) / hops.length;
+
+    // Initialize map
+    tracerouteMap = L.map('map').setView([avgLat, avgLon], 3);
+
+    // Add tile layer (OpenStreetMap)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    }).addTo(tracerouteMap);
+
+    // Create markers and collect coordinates for polyline
+    const latLngs = [];
+    const markers = [];
+
+    hops.forEach((hop, index) => {
+        const latLng = [hop.lat, hop.lon];
+        latLngs.push(latLng);
+
+        // Create custom icon with hop number
+        const icon = L.divIcon({
+            className: 'custom-marker',
+            html: `<div style="background-color: ${getHopColor(index, hops.length)};
+                   color: white;
+                   border-radius: 50%;
+                   width: 32px;
+                   height: 32px;
+                   display: flex;
+                   align-items: center;
+                   justify-content: center;
+                   font-weight: bold;
+                   font-size: 12px;
+                   border: 2px solid white;
+                   box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                   ${hop.hopNumber}
+                   </div>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+
+        // Create marker
+        const marker = L.marker(latLng, { icon: icon }).addTo(tracerouteMap);
+
+        // Create popup content
+        const popupContent = `
+            <div style="min-width: 200px;">
+                <h4 style="margin: 0 0 8px 0; font-weight: bold; color: #3b82f6;">Salto ${hop.hopNumber}</h4>
+                <p style="margin: 4px 0;"><strong>IP:</strong> ${hop.ipAddress || 'N/A'}</p>
+                <p style="margin: 4px 0;"><strong>Hostname:</strong> ${hop.hostname || 'Unknown'}</p>
+                ${hop.city ? `<p style="margin: 4px 0;"><strong>Cidade:</strong> ${hop.city}</p>` : ''}
+                ${hop.country ? `<p style="margin: 4px 0;"><strong>País:</strong> ${hop.country}</p>` : ''}
+                <p style="margin: 4px 0;"><strong>Coordenadas:</strong> ${hop.lat.toFixed(4)}, ${hop.lon.toFixed(4)}</p>
+            </div>
+        `;
+
+        marker.bindPopup(popupContent);
+        markers.push(marker);
+    });
+
+    // Draw polyline connecting all hops
+    if (latLngs.length > 1) {
+        L.polyline(latLngs, {
+            color: '#3b82f6',
+            weight: 3,
+            opacity: 0.7,
+            smoothFactor: 1,
+            dashArray: '10, 5' // Dashed line to show direction flow
+        }).addTo(tracerouteMap);
+    }
+
+    // Fit map to show all markers
+    if (latLngs.length > 0) {
+        const bounds = L.latLngBounds(latLngs);
+        tracerouteMap.fitBounds(bounds, { padding: [50, 50] });
+    }
+
+    // Open first and last marker popups briefly to show start and end
+    setTimeout(() => {
+        if (markers.length > 0) {
+            markers[0].openPopup();
+            setTimeout(() => {
+                if (markers.length > 1) {
+                    markers[markers.length - 1].openPopup();
+                }
+            }, 2000);
+        }
+    }, 500);
+}
+
+// Helper function to get color gradient from green (start) to red (end)
+function getHopColor(index, total) {
+    const ratio = index / Math.max(total - 1, 1);
+    const r = Math.round(59 + ratio * (239 - 59)); // 59 to 239 (green to red)
+    const g = Math.round(130 - ratio * (130 - 68)); // 130 to 68
+    const b = Math.round(246 - ratio * (246 - 68)); // 246 to 68
+    return `rgb(${r}, ${g}, ${b})`;
 }
 
 // ==========================================
