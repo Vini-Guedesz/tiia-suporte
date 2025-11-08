@@ -439,21 +439,21 @@ async function traceroute() {
         const hops = await response.json();
 
         // Format text output
-        let textOutput = `Traceroute para ${host}\\n`;
-        textOutput += `Total de saltos: ${hops.length}\\n`;
-        textOutput += `${'='.repeat(80)}\\n\\n`;
+        let textOutput = `Traceroute para ${host}\n`;
+        textOutput += `Total de saltos: ${hops.length}\n`;
+        textOutput += `${'='.repeat(80)}\n\n`;
 
         hops.forEach(hop => {
-            textOutput += `Salto ${hop.hopNumber}:\\n`;
-            textOutput += `  IP: ${hop.ipAddress || 'N/A'}\\n`;
-            textOutput += `  Hostname: ${hop.hostname || 'Unknown'}\\n`;
+            textOutput += `Salto ${hop.hopNumber}:\n`;
+            textOutput += `  IP: ${hop.ipAddress || 'N/A'}\n`;
+            textOutput += `  Hostname: ${hop.hostname || 'Unknown'}\n`;
             if (hop.city || hop.country) {
-                textOutput += `  Localização: ${hop.city || 'N/A'}, ${hop.country || 'N/A'}\\n`;
+                textOutput += `  Localização: ${hop.city || 'N/A'}, ${hop.country || 'N/A'}\n`;
             }
             if (hop.lat && hop.lon) {
-                textOutput += `  Coordenadas: ${hop.lat.toFixed(4)}, ${hop.lon.toFixed(4)}\\n`;
+                textOutput += `  Coordenadas: ${hop.lat.toFixed(4)}, ${hop.lon.toFixed(4)}\n`;
             }
-            textOutput += `\\n`;
+            textOutput += `\n`;
         });
 
         hideSkeletonLoading();

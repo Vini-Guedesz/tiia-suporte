@@ -1,5 +1,6 @@
 package org.project.tiiasuporte.traceroute;
 
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -79,6 +80,7 @@ public class TracerouteController {
             )
         }
     )
+    @RateLimiter(name = "traceroute")
     @GetMapping("/geo/{host}")
     public CompletableFuture<List<TracerouteHop>> tracerouteWithGeo(
         @Parameter(
