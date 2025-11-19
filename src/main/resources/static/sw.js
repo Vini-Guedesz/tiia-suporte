@@ -1,5 +1,5 @@
 // Service Worker for PWA
-const CACHE_NAME = 'tiia-suporte-v1';
+const CACHE_NAME = 'tiia-suporte-v2';
 const urlsToCache = [
   '/',
   '/index.html',

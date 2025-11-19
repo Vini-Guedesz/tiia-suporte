@@ -9,15 +9,23 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.project.tiiasuporte.util.ValidationUtils;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
 @Service
 public class GeoService {
 
     private static final Logger logger = LoggerFactory.getLogger(GeoService.class);
+    private static final int CONNECTION_TIMEOUT_MS = 3000;
+    private static final int READ_TIMEOUT_MS = 5000;
 
     private final RestTemplate restTemplate;
 
@@ -33,6 +41,8 @@ public class GeoService {
     @CircuitBreaker(name = "ipApi", fallbackMethod = "getGeoFallback")
     @RateLimiter(name = "ipApi")
     public String obterLocalizacao(String ip) {
+        long startTime = System.currentTimeMillis();
+
         if (!ValidationUtils.isValidIpAddress(ip)) {
             logger.warn("Tentativa de obter geolocalização com IP inválido: {}", ip);
             throw new InvalidIpAddressException("Endereço IP inválido: " + ip);
@@ -41,7 +51,8 @@ public class GeoService {
         String url = geolocalizacaoApiUrl + ip;
         try {
             String response = restTemplate.getForObject(url, String.class);
-            logger.info("Geolocalização para IP {}: {}", ip, response);
+            long duration = System.currentTimeMillis() - startTime;
+            logger.debug("Geolocalização para IP {} concluída em {}ms", ip, duration);
             return response;
         } catch (HttpClientErrorException e) {
             logger.error("Erro ao consultar a API de geolocalização para IP {}: {}", ip, e.getStatusCode(), e);

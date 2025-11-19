@@ -1,5 +1,6 @@
 package org.project.tiiasuporte.config;
 
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import org.project.tiiasuporte.exceptions.InvalidIpAddressException;
 import org.project.tiiasuporte.exceptions.ExternalServiceException;
 import org.slf4j.Logger;
@@ -42,6 +43,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         body.put("status", HttpStatus.SERVICE_UNAVAILABLE.value());
         body.put("error", HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase());
         return new ResponseEntity<>(body, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    @ExceptionHandler(RequestNotPermitted.class)
+    public ResponseEntity<Object> handleRequestNotPermitted(RequestNotPermitted ex, WebRequest request) {
+        logger.warn("Rate limit exceeded: {} | Request: {}", ex.getMessage(), request.getDescription(false));
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", "Limite de requisições excedido. Por favor, aguarde alguns segundos antes de tentar novamente.");
+        body.put("status", HttpStatus.TOO_MANY_REQUESTS.value());
+        body.put("error", "Too Many Requests");
+        body.put("retryAfter", "60 segundos");
+        return new ResponseEntity<>(body, HttpStatus.TOO_MANY_REQUESTS);
     }
 
     @ExceptionHandler(Exception.class)

@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Ferramentas de diagnóstico de rede: Domain Lookup, DNS, Geolocalização, Ping, Port Scan e Traceroute">
     <meta name="theme-color" content="#3b82f6">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>TIIA Suporte - Ferramentas de Rede</title>
 
     <!-- PWA -->
@@ -223,6 +226,28 @@
                 </button>
             </div>
 
+            <!-- Monitor de Ping -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 fade-in">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="w-12 h-12 bg-teal-100 dark:bg-teal-900 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-teal-600 dark:text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">Monitor de Ping</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Tempo Real & Gráficos</p>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    Monitore múltiplos alvos em tempo real com gráficos, estatísticas e alertas.
+                </p>
+                <a href="ping-monitor.html"
+                    class="w-full block text-center bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                    Abrir Monitor
+                </a>
+            </div>
+
             <!-- Port Scan -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 fade-in">
                 <div class="flex items-center space-x-3 mb-4">
@@ -342,7 +367,7 @@
         </div>
     </footer>
 
-    <script src="js/app.js?v=2"></script>
+    <script src="js/app.js?v=3"></script>
 
     <!-- Service Worker Registration -->
     <script>
