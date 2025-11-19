@@ -19,7 +19,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-@WebMvcTest(TracerouteController.class)
+import static org.mockito.ArgumentMatchers.any;
+
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.web.client.RestTemplate;
+import java.util.function.Supplier;
+
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
+@SpringBootTest
+@AutoConfigureMockMvc
 public class TracerouteGeoControllerIntegrationTest {
 
     @Autowired

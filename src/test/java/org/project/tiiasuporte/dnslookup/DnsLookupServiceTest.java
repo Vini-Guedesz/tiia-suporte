@@ -141,7 +141,9 @@ class DnsLookupServiceTest {
             Map<String, Object> result = dnsLookupService.dnsLookup("example.com").get();
 
             assertNotNull(result);
-            assertTrue(result.isEmpty()); // Expect an empty map if no attributes are found
+            assertFalse(result.isEmpty());
+            assertEquals(1, result.size());
+            assertTrue(result.containsKey("queryTime"));
 
 
         }
