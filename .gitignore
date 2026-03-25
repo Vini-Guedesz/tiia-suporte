@@ -31,9 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-
-### Claude ###
-.claude/
-
-### Windows ###
-nul
