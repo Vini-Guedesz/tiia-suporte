@@ -1,81 +1,67 @@
-# TIIA Suporte
+# TIIA Suporte (Java + Spring Boot)
 
-API e painel web para diagnostico de rede e apoio a times de suporte tecnico.
+TIIA Suporte is a network diagnostics application with a Spring Boot API and a lightweight web panel. It provides operational tools for support teams, including streaming diagnostics and continuous target monitoring.
 
-## Status
+## ✨ Features
 
-- Ativo
-- Versao atual: backend Spring Boot com API HTTP + SSE
+- 📡 Real-time network diagnostics (SSE):
+  - Ping stream
+  - Traceroute stream
+  - Continuous ping monitor with latency and packet loss metrics
+- 🌐 Utility endpoints:
+  - DNS lookup
+  - IP geolocation
+  - Whois lookup
+  - Controlled port scan
+- 🧭 Operational web panel for manual usage
+- 📘 OpenAPI + Swagger UI documentation
 
-## Stack
+## 🛠️ Tech Stack
 
 - Java 21
 - Spring Boot
-- Spring Web
-- Spring Validation
-- springdoc OpenAPI (Swagger)
+- Spring Web + Validation
+- springdoc OpenAPI
 - Maven
 
-## Funcionalidades
-
-- Ping e traceroute com streaming SSE
-- Monitoramento continuo de alvo com metricas de latencia e perda
-- DNS lookup
-- Geolocalizacao de IP publico
-- Whois de dominio
-- Port scan controlado
-- Painel web estatico para operacao manual
-
-## Como executar
-
-### Local
+## 📦 Installation
 
 ```bash
+# Clone repository
+git clone https://github.com/Vini-Guedesz/tiia-suporte.git
+
+# Enter project folder
+cd tiia-suporte
+
+# Run application
 mvn spring-boot:run
 ```
 
-Acessos:
+The app will be available at:
 
-- Painel: `http://localhost:8080/`
+- Panel: `http://localhost:8080/`
 - Swagger: `http://localhost:8080/swagger-ui/index.html`
-- OpenAPI: `http://localhost:8080/v3/api-docs`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-### Porta alternativa
+## 🧩 Project Structure
 
-```bash
-mvn spring-boot:run "-Dspring-boot.run.jvmArguments=-Dserver.port=8081"
+```text
+src/
+ ├── main/
+ │    ├── java/com/project/suporte/ai/
+ │    │    ├── controller/      # HTTP and SSE endpoints
+ │    │    ├── service/         # Business rules
+ │    │    ├── dto/             # Request/response contracts
+ │    │    ├── support/         # Helpers and integrations
+ │    │    └── config/          # App configuration
+ │    └── resources/
+ │         └── static/          # Web panel
+ └── test/
 ```
 
-## Endpoints principais
+## 📌 Roadmap
 
-- `GET /api/v1/ping?target=8.8.8.8&count=4`
-- `GET /api/v1/ping/monitor?target=example.com&intervalMs=5000&timeoutMs=2000`
-- `GET /api/v1/traceroute?target=1.1.1.1`
-- `GET /api/v1/dns?hostname=openai.com`
-- `GET /api/v1/geolocation?target=8.8.8.8`
-- `GET /api/v1/whois?domain=openai.com`
-- `POST /api/v1/portscan`
-
-## Estrutura
-
-- `src/main/java/.../controller`: endpoints
-- `src/main/java/.../service`: regras de negocio
-- `src/main/java/.../dto`: contratos de entrada e saida
-- `src/main/resources/static`: painel web
-- `docs/ARQUITETURA.md`: visao tecnica detalhada
-
-## Testes
-
-```bash
-mvn test
-```
-
-## Roadmap
-
-- Expandir testes de carga para fluxos SSE
-- Adicionar autenticacao opcional para operacao restrita
-- Publicar dashboard com metricas operacionais
-
-## Autor
-
-Desenvolvido por [Vinicius Guedes](https://github.com/Vini-Guedesz).
+- [ ] Add authentication mode for restricted environments
+- [ ] Expand stress/load tests for SSE flows
+- [ ] Add richer operational dashboards and uptime reports
+- [ ] Add CI quality gates for API contract checks
