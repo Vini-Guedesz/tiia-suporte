@@ -1,22 +1,22 @@
 # TIIA Suporte (Java + Spring Boot)
 
-TIIA Suporte is a network diagnostics application with a Spring Boot API and a lightweight web panel. It provides operational tools for support teams, including streaming diagnostics and continuous target monitoring.
+TIIA Suporte e uma aplicacao de diagnostico de rede com API Spring Boot e painel web leve para operacao tecnica.
 
-## ✨ Features
+## Funcionalidades
 
-- 📡 Real-time network diagnostics (SSE):
-  - Ping stream
-  - Traceroute stream
-  - Continuous ping monitor with latency and packet loss metrics
-- 🌐 Utility endpoints:
-  - DNS lookup
-  - IP geolocation
-  - Whois lookup
-  - Controlled port scan
-- 🧭 Operational web panel for manual usage
-- 📘 OpenAPI + Swagger UI documentation
+- Diagnostico de rede em tempo real com SSE:
+  - stream de ping
+  - stream de traceroute
+  - monitor continuo com latencia e perda de pacote
+- Endpoints utilitarios:
+  - consulta DNS
+  - geolocalizacao de IP
+  - whois de dominio
+  - port scan controlado
+- Painel operacional para uso manual
+- Documentacao OpenAPI com Swagger UI
 
-## 🛠️ Tech Stack
+## Stack
 
 - Java 21
 - Spring Boot
@@ -24,44 +24,44 @@ TIIA Suporte is a network diagnostics application with a Spring Boot API and a l
 - springdoc OpenAPI
 - Maven
 
-## 📦 Installation
+## Instalacao
 
 ```bash
-# Clone repository
+# Clonar repositorio
 git clone https://github.com/Vini-Guedesz/tiia-suporte.git
 
-# Enter project folder
+# Entrar no projeto
 cd tiia-suporte
 
-# Run application
+# Subir aplicacao
 mvn spring-boot:run
 ```
 
-The app will be available at:
+A aplicacao ficara disponivel em:
 
-- Panel: `http://localhost:8080/`
+- Painel: `http://localhost:8080/`
 - Swagger: `http://localhost:8080/swagger-ui/index.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-## 🧩 Project Structure
+## Estrutura do projeto
 
 ```text
 src/
  ├── main/
  │    ├── java/com/project/suporte/ai/
- │    │    ├── controller/      # HTTP and SSE endpoints
- │    │    ├── service/         # Business rules
- │    │    ├── dto/             # Request/response contracts
- │    │    ├── support/         # Helpers and integrations
- │    │    └── config/          # App configuration
+ │    │    ├── controller/      # Endpoints HTTP e SSE
+ │    │    ├── service/         # Regras de negocio
+ │    │    ├── dto/             # Contratos de entrada e saida
+ │    │    ├── support/         # Integracoes e utilitarios
+ │    │    └── config/          # Configuracoes da aplicacao
  │    └── resources/
- │         └── static/          # Web panel
+ │         └── static/          # Painel web
  └── test/
 ```
 
-## 📌 Roadmap
+## Roadmap
 
-- [ ] Add authentication mode for restricted environments
-- [ ] Expand stress/load tests for SSE flows
-- [ ] Add richer operational dashboards and uptime reports
-- [ ] Add CI quality gates for API contract checks
+- [ ] Adicionar modo de autenticacao para ambientes restritos
+- [ ] Expandir testes de carga dos fluxos SSE
+- [ ] Adicionar dashboards operacionais mais ricos
+- [ ] Adicionar gates de qualidade CI para contrato de API
