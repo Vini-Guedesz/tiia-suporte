@@ -59,9 +59,3 @@ src/
  └── test/
 ```
 
-## Roadmap
-
-- [ ] Adicionar modo de autenticacao para ambientes restritos
-- [ ] Expandir testes de carga dos fluxos SSE
-- [ ] Adicionar dashboards operacionais mais ricos
-- [ ] Adicionar gates de qualidade CI para contrato de API
